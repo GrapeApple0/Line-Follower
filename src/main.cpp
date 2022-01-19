@@ -19,9 +19,6 @@
 //    MotorA is Left
 // 　 MotorB is Right
 
-//Mechanism pictures
-//Coming soon
-
 //history
 //ver 1.3 18/1/2022 => bug fix,add slope detect
 //ver 1.2 17/1/2022 => bug fix,add line follow program
@@ -81,7 +78,6 @@ void setup() {
   pinMode(runSwitch, INPUT);
   lcd.init();
   lcd.backlight();
-  Serial.begin(9600);
   sensor_gui();
 }
 
@@ -149,10 +145,10 @@ void linetrace() {
           }
         }
         else { //                                                 BWBW? sensor 4
-          if (digitalRead(sensor5) == 1) { //                   BWBWB
+          if (digitalRead(sensor5) == 1) { //                     BWBWB
 
           }
-          else { //                                             BBBWW sensor 5
+          else { //                                               BBBWW sensor 5
 
           }
         }
