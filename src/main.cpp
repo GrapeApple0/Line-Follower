@@ -27,6 +27,9 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#ifndef M_PI
+#define M_PI  (3.1415926535897932384626433832795)
+#endif
 
 const int touch = 2;
 const int sensor1 = 3;
@@ -56,6 +59,7 @@ void forward(int, int);
 void right(int, int);
 void left(int, int);
 void m_stop();
+double Map( int, int , int, double, double, bool);
 
 LiquidCrystal_I2C lcd(lcd_id, 16, 2);
 
@@ -91,6 +95,34 @@ void loop() {
   sensor_gui();
 }
 
+double Map( int iIn, int iIn1, int iIn2, double dOut1, double dOut2, bool bConstrain = false )
+{
+  double dValue = (iIn - iIn1) * (dOut2 - dOut1) / (iIn2 - iIn1) + dOut1;
+  if( bConstrain )
+  {
+    double dOutMin, dOutMax;
+    if( dOut1 < dOut2 )
+    {
+      dOutMin= dOut1;
+      dOutMax= dOut2;
+    }
+    else
+    {
+      dOutMin= dOut2;
+      dOutMax= dOut1;
+    }
+    if( dOutMin > dValue )
+    {
+      return dOutMin;
+    }
+    if( dOutMax < dValue )
+    {
+      return dOutMax;
+    }
+  }
+  return dValue;
+}
+
 float readAnalog(int pin) {
   int i = analogRead(pin);
   float f = i * 5.0 / 1023.0;
@@ -104,26 +136,31 @@ void linetrace() {
   //? => null
   //to hard...
   if (1 < get_slope()) {
-      forward(200, 300);
+      forward(230, 300);
   }
   if (digitalRead(sensor1) == 1) { //          farest left sensor B????
     if (digitalRead(sensor2) == 1) { //               left sensor BB???
       if (digitalRead(sensor3) == 1) { //           center sensor BBB??
         if (digitalRead(sensor4) == 1) { //          right sensor BBBB?
           if (digitalRead(sensor5) == 1) { // farest right sensor BBBBB
-            int turn_cnt = 0;
-            if (digitalRead(green1) == 1) { // green sensor left   GB?
-
-            }
-            if (digitalRead(green2) == 1) { // green sensor right  GBG
-
-            }
-            for (int i = 0; i <= turn_cnt; i++) {
-
+            int turn_cnt = 0;          
+            for (int i = 0; i < 10; i++)
+            {
+              left(60,10);
+              right(60,10);
+              back(60,10);
+              if (digitalRead(green2) == 1) { // green sensor left   GB?
+                left(100,700);
+                turn_cnt++;
+              }
+              if (digitalRead(green1) == 1) { // green sensor right  GBG
+                right(100,700);
+                turn_cnt++;
+              }     
             }
           }
-          else { //                                               BBBBW sensor 5
-
+          else { //                                               BBBBW sensor 5           
+           left(100,950);
           }
         }
         else { //                                                 BBBW? sensor 4
@@ -131,7 +168,7 @@ void linetrace() {
 
           }
           else { //                                               BBBWW sensor 5
-
+            left(100,950);      
           }
         }
       }
@@ -145,11 +182,11 @@ void linetrace() {
           }
         }
         else { //                                                 BWBW? sensor 4
-          if (digitalRead(sensor5) == 1) { //                     BWBWB
+          if (digitalRead(sensor5) == 1) { //                     BBWWB
 
           }
-          else { //                                               BBBWW sensor 5
-
+          else { //                                               BBWWW sensor 5     
+           left(100,150);
           }
         }
       }
@@ -157,10 +194,10 @@ void linetrace() {
     else { //                                                     BW??? sensor 2
       if (digitalRead(sensor3) == 1) { //           center sensor BWB??
         if (digitalRead(sensor4) == 1) { //          right sensor BWBB?
-          if (digitalRead(sensor5) == 1) { // farest right sensor BBBWB
+          if (digitalRead(sensor5) == 1) { // farest right sensor BWBBB
 
           }
-          else { //                                               BBBWW sensor 5
+          else { //                                               BWBBW sensor 5 
 
           }
         }
@@ -187,7 +224,9 @@ void linetrace() {
 
           }
           else { //                                              BWWWW sensor 5
-
+            left(100,150);
+              digitalWrite(motorA1, HIGH);
+  analogWrite(motorAPWM, 100);
           }
         }
       }
@@ -198,10 +237,10 @@ void linetrace() {
       if (digitalRead(sensor3) == 1) { //         center sensor WBB??
         if (digitalRead(sensor4) == 1) { //        right sensor WBBB?
           if (digitalRead(sensor5) == 1) {//farest right sensor WBBBB
-
+           right(100,950);
           }
           else { //                                             WBBBW sensor 5
-            forward(180, 300);
+            forward(100, 150);
           }
         }
         else { //                                               WBBW? sensor 4
@@ -209,16 +248,16 @@ void linetrace() {
 
           }
           else { //                                             WBBWW sensor 5
-
+            left(100,200);
           }
         }
       }
       else { //                                                 WBW?? sensor 3
         if (digitalRead(sensor4) == 1) { //        right sensor WBWB?
-          if (digitalRead(sensor5) == 1) {//farest right sensor WBWWB
+          if (digitalRead(sensor5) == 1) {//farest right sensor WBWBB
 
           }
-          else { //                                             WBWWW sensor 5
+          else { //                                             WBWBW sensor 5
 
           }
         }
@@ -227,7 +266,7 @@ void linetrace() {
 
           }
           else { //                                             WBWWW sensor 5
-
+            left(100,200);
           }
         }
       }
@@ -235,11 +274,11 @@ void linetrace() {
     else {//                                                    WW??? sensor 2
       if (digitalRead(sensor3) == 1) { //         center sensor WWB??
         if (digitalRead(sensor4) == 1) { //        right sensor WWBB?
-          if (digitalRead(sensor5) == 1) {//farest right sensor WWBBB
-
+          if (digitalRead(sensor5) == 1) {//farest right sensor WWBBB       
+            right(100,950);
           }
           else { //                                             WWBBW sensor 5
-
+            right(100,150);
           }
         }
         else { //                                               WWBW? sensor 4
@@ -247,25 +286,27 @@ void linetrace() {
 
           }
           else { //                                             WWBWW sensor 5
-
+            forward(100,120);
           }
         }
       }
       else { //                                   center sensor WWW?? sensor 3
         if (digitalRead(sensor4) == 1) { //        right sensor WWWB?
-          if (digitalRead(sensor5) == 1) {//farest right sensor WWWBB
-
+          if (digitalRead(sensor5) == 1) {//farest right sensor WWWBB      
+            right(100,150);
           }
           else { //                                             WWWBW sensor 5
-
+            right(100,150);
           }
         }
         else { //                                               WWWW? sensor 4
           if (digitalRead(sensor5) == 1) {//farest right sensor WWWWB
-
+            right(100,150);
+            digitalWrite(motorB1, HIGH);
+            analogWrite(motorBPWM, 100);
           }
           else { //                                             WWWWW sensor 5
-
+            forward(100,200);
           }
         }
       }
@@ -283,37 +324,32 @@ int get_slope() {
   return rtn;
 }
 
-//0 = stop,1 = forward,2 = back,3 = left,4 = right
 void back(int mspeed, int movetime) {
+  m_stop();
   digitalWrite(motorA1, HIGH);
   analogWrite(motorAPWM, mspeed);
   digitalWrite(motorB1, HIGH);
   analogWrite(motorBPWM, mspeed);
-  delay(movetime);
-  m_stop();
 }
 
 void forward(int mspeed, int movetime) {
+  m_stop();
   digitalWrite(motorA2, HIGH);
   analogWrite(motorAPWM, mspeed);
   digitalWrite(motorB2, HIGH);
-  analogWrite(motorBPWM, mspeed);
-  delay(movetime);
-  m_stop();
+  analogWrite(motorBPWM, mspeed*0.8);
 }
 
 void right(int mspeed, int movetime) {
+  m_stop();
   digitalWrite(motorA2, HIGH);
   analogWrite(motorAPWM, mspeed);
-  delay(movetime);
-  m_stop();
 }
 
 void left(int mspeed, int movetime) {
+  m_stop();
   digitalWrite(motorB2, HIGH);
   analogWrite(motorBPWM, mspeed);
-  delay(movetime);
-  m_stop();
 }
 
 void m_stop() {
@@ -321,8 +357,6 @@ void m_stop() {
   digitalWrite(motorB1, LOW);
   digitalWrite(motorA2, LOW);
   digitalWrite(motorB2, LOW);
-  digitalWrite(motorAPWM, LOW);
-  digitalWrite(motorBPWM, LOW);
 }
 
 void sensor_gui() {
@@ -381,5 +415,4 @@ void sensor_gui() {
   }
   lcd.setCursor(6, 1);
   lcd.print(get_slope());
-  delay(500);
 }
