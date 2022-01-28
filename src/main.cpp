@@ -7,7 +7,7 @@
 //and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
 //The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+//THE SOFTWARE IS PRO VIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
 //INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 //IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 //TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -26,10 +26,6 @@
 //ver 1.0 7/1/2022 => first version
 #include <Arduino.h>
 #include <Wire.h>
-#include <LiquidCrystal_I2C.h>
-#ifndef M_PI
-#define M_PI  (3.1415926535897932384626433832795)
-#endif
 
 const int touch = 2;
 const int sensor1 = 3;
@@ -43,25 +39,17 @@ const int motorBPWM = 10;
 const int motorAPWM = 11;
 const int motorA2 = 12;
 const int motorA1 = 13;
-const int green1 = 14;//Analog 0 Left
-const int runSwitch = 15;
-const int green2 = 16;//Analog 1 Right
-const int slopeSensor = 3;//Analog 3
-const byte lcd_id = 0x27;
-bool isRun = true;
-bool slope = false;
-int val = 0;
-int get_slope();
+const int bump = 14;
 void linetrace();
 void sensor_gui();
-void back(int, int);
-void forward(int, int);
-void right(int, int);
-void left(int, int);
+void back(int);
+void forward(int);
+void right(int);
+void left(int);
+void t_right(int);
+void t_left(int);
 void m_stop();
-double Map( int, int , int, double, double, bool);
-
-LiquidCrystal_I2C lcd(lcd_id, 16, 2);
+int true_sensor();
 
 void setup() {
   // put your setup code here, to run once:
@@ -77,254 +65,113 @@ void setup() {
   pinMode(sensor3, INPUT);
   pinMode(sensor4, INPUT);
   pinMode(sensor5, INPUT);
-  pinMode(green1, INPUT);
-  pinMode(green2, INPUT);
-  pinMode(runSwitch, INPUT);
-  lcd.init();
-  lcd.backlight();
-  sensor_gui();
 }
 
 void loop() {
-  if (digitalRead(runSwitch) == 1) {
-    linetrace();
-    isRun = true;
-  } else {
-    isRun = false;
-  }
-  sensor_gui();
-}
-
-double Map( int iIn, int iIn1, int iIn2, double dOut1, double dOut2, bool bConstrain = false )
-{
-  double dValue = (iIn - iIn1) * (dOut2 - dOut1) / (iIn2 - iIn1) + dOut1;
-  if( bConstrain )
-  {
-    double dOutMin, dOutMax;
-    if( dOut1 < dOut2 )
-    {
-      dOutMin= dOut1;
-      dOutMax= dOut2;
-    }
-    else
-    {
-      dOutMin= dOut2;
-      dOutMax= dOut1;
-    }
-    if( dOutMin > dValue )
-    {
-      return dOutMin;
-    }
-    if( dOutMax < dValue )
-    {
-      return dOutMax;
-    }
-  }
-  return dValue;
-}
-
-float readAnalog(int pin) {
-  int i = analogRead(pin);
-  float f = i * 5.0 / 1023.0;
-  return f;
+  linetrace();
 }
 
 void linetrace() {
-  //B => Black
-  //W => White
-  //G => Green
-  //? => null
-  //to hard...
-  if (1 < get_slope()) {
-      forward(230, 300);
+  if (digitalRead(touch) == 1)
+  {
+    
   }
-  if (digitalRead(sensor1) == 1) { //          farest left sensor B????
-    if (digitalRead(sensor2) == 1) { //               left sensor BB???
-      if (digitalRead(sensor3) == 1) { //           center sensor BBB??
-        if (digitalRead(sensor4) == 1) { //          right sensor BBBB?
-          if (digitalRead(sensor5) == 1) { // farest right sensor BBBBB
-            int turn_cnt = 0;          
-            for (int i = 0; i < 10; i++)
-            {
-              left(60,10);
-              right(60,10);
-              back(60,10);
-              if (digitalRead(green2) == 1) { // green sensor left   GB?
-                left(100,700);
-                turn_cnt++;
-              }
-              if (digitalRead(green1) == 1) { // green sensor right  GBG
-                right(100,700);
-                turn_cnt++;
-              }     
-            }
-          }
-          else { //                                               BBBBW sensor 5           
-           left(100,950);
-          }
-        }
-        else { //                                                 BBBW? sensor 4
-          if (digitalRead(sensor5) == 1) { // farest right sensor BBBWB
-
-          }
-          else { //                                               BBBWW sensor 5
-            left(100,950);      
-          }
-        }
-      }
-      else { //                                                   BBW?? sensor 3
-        if (digitalRead(sensor4) == 1) { //          right sensor BBWB?
-          if (digitalRead(sensor5) == 1) { // farest right sensor BBWBB
-
-          }
-          else { //                                               BBWBW sensor 5
-
-          }
-        }
-        else { //                                                 BWBW? sensor 4
-          if (digitalRead(sensor5) == 1) { //                     BBWWB
-
-          }
-          else { //                                               BBWWW sensor 5     
-           left(100,150);
-          }
-        }
-      }
+  else if (digitalRead(bump) == 1)
+  {
+    /* code */
+  } 
+  else if (true_sensor() == 5)//交差点・T字路・バンプ
+  {
+    back(80);
+    delay(50);
+    if (digitalRead(sensor3) == 1)
+    {
+      forward(100);
+      delay(300);
     }
-    else { //                                                     BW??? sensor 2
-      if (digitalRead(sensor3) == 1) { //           center sensor BWB??
-        if (digitalRead(sensor4) == 1) { //          right sensor BWBB?
-          if (digitalRead(sensor5) == 1) { // farest right sensor BWBBB
-
-          }
-          else { //                                               BWBBW sensor 5 
-
-          }
+    else
+    {
+      while (digitalRead(sensor3) != 1)
+      {
+        if (digitalRead(sensor2) == 1)
+        {
+          right(70);
         }
-        else {
-          if (digitalRead(sensor5) == 1) { // farest right sensor BWBWB
-
-          }
-          else { //                                               BWBWW sensor 5
-
-          }
+        else{
+          left(70);
         }
       }
-      else {
-        if (digitalRead(sensor4) == 1) { //          right sensor BWBB?
-          if (digitalRead(sensor5) == 1) { //        right sensor BWBBB
-
-          }
-          else { //                                               BWBBW sensor 5
-
-          }
-        }
-        else {
-          if (digitalRead(sensor5) == 1) { //       right sensor BWWWB
-
-          }
-          else { //                                              BWWWW sensor 5
-            left(100,150);
-              digitalWrite(motorA1, HIGH);
-  analogWrite(motorAPWM, 100);
-          }
-        }
-      }
+      
     }
   }
-  else { //                                                     W???? sensor 1
-    if (digitalRead(sensor2) == 1) { //             left sensor WB???
-      if (digitalRead(sensor3) == 1) { //         center sensor WBB??
-        if (digitalRead(sensor4) == 1) { //        right sensor WBBB?
-          if (digitalRead(sensor5) == 1) {//farest right sensor WBBBB
-           right(100,950);
-          }
-          else { //                                             WBBBW sensor 5
-            forward(100, 150);
-          }
-        }
-        else { //                                               WBBW? sensor 4
-          if (digitalRead(sensor5) == 1) {//farest right sensor WBBWB
-
-          }
-          else { //                                             WBBWW sensor 5
-            left(100,200);
-          }
-        }
-      }
-      else { //                                                 WBW?? sensor 3
-        if (digitalRead(sensor4) == 1) { //        right sensor WBWB?
-          if (digitalRead(sensor5) == 1) {//farest right sensor WBWBB
-
-          }
-          else { //                                             WBWBW sensor 5
-
-          }
-        }
-        else { //                                               WBWW? sensor 4
-          if (digitalRead(sensor5) == 1) {//farest right sensor WBWWB
-
-          }
-          else { //                                             WBWWW sensor 5
-            left(100,200);
-          }
-        }
-      }
+  else if (true_sensor() == 4 || true_sensor() == 3)//直角
+  {
+    int l_sensor_cnt = 0;
+    int r_sensor_cnt = 0;
+    if (digitalRead(sensor1) == 1)
+    {
+      l_sensor_cnt++;
     }
-    else {//                                                    WW??? sensor 2
-      if (digitalRead(sensor3) == 1) { //         center sensor WWB??
-        if (digitalRead(sensor4) == 1) { //        right sensor WWBB?
-          if (digitalRead(sensor5) == 1) {//farest right sensor WWBBB       
-            right(100,950);
-          }
-          else { //                                             WWBBW sensor 5
-            right(100,150);
-          }
-        }
-        else { //                                               WWBW? sensor 4
-          if (digitalRead(sensor5) == 1) {//farest right sensor WWBWB
-
-          }
-          else { //                                             WWBWW sensor 5
-            forward(100,120);
-          }
-        }
-      }
-      else { //                                   center sensor WWW?? sensor 3
-        if (digitalRead(sensor4) == 1) { //        right sensor WWWB?
-          if (digitalRead(sensor5) == 1) {//farest right sensor WWWBB      
-            right(100,150);
-          }
-          else { //                                             WWWBW sensor 5
-            right(100,150);
-          }
-        }
-        else { //                                               WWWW? sensor 4
-          if (digitalRead(sensor5) == 1) {//farest right sensor WWWWB
-            right(100,150);
-            digitalWrite(motorB1, HIGH);
-            analogWrite(motorBPWM, 100);
-          }
-          else { //                                             WWWWW sensor 5
-            forward(100,200);
-          }
-        }
-      }
+    if (digitalRead(sensor2) == 1)
+    {
+      l_sensor_cnt++;
     }
+    if (digitalRead(sensor4) == 1)
+    {
+      r_sensor_cnt++;
+    }
+    if (digitalRead(sensor5) == 1)
+    {
+      r_sensor_cnt++;
+    }    
+    if (l_sensor_cnt < r_sensor_cnt)
+    {
+      back(80); 
+      right(150);
+      delay(100);
+    }
+    else if (l_sensor_cnt > r_sensor_cnt)
+    {
+      back(80);   
+      left(150);
+      delay(100);
+    }
+    else
+    {
+      forward(130);
+    }
+  }
+  else if (true_sensor() == 1 || true_sensor() == 2)//直線・カーブ
+  {
+    if (digitalRead(sensor1) == 1)
+    {
+      back(80); 
+      left(150);
+    }    
+    else if (digitalRead(sensor5) == 1)
+    {
+      back(80);       
+      right(150);
+    }
+    else if (digitalRead(sensor2) == 1)
+    {
+      forward(110);
+    } 
+    else if (digitalRead(sensor4) == 1)
+    {
+      forward(110);
+    }
+    else if (digitalRead(sensor3) == 1)
+    {
+      forward(100);
+    }     
+  }
+  else{//白
+    forward(130);
   }
 }
 
-int get_slope() {
-  float ms2 = 9.8;
-  float offset_voltage = 2500.0;
-  float y =  (analogRead(slopeSensor) / 1024.0) * 5.0 * 1000;
-  y = y - offset_voltage;
-  float yg = y / 1000.0;
-  int rtn = yg * ms2;
-  return rtn;
-}
-
-void back(int mspeed, int movetime) {
+void back(int mspeed) {
   m_stop();
   digitalWrite(motorA1, HIGH);
   analogWrite(motorAPWM, mspeed);
@@ -332,24 +179,40 @@ void back(int mspeed, int movetime) {
   analogWrite(motorBPWM, mspeed);
 }
 
-void forward(int mspeed, int movetime) {
+void forward(int mspeed) {
   m_stop();
   digitalWrite(motorA2, HIGH);
-  analogWrite(motorAPWM, mspeed);
+  analogWrite(motorAPWM, mspeed * 1.5);
   digitalWrite(motorB2, HIGH);
-  analogWrite(motorBPWM, mspeed*0.8);
+  analogWrite(motorBPWM, mspeed * 1.5);
 }
 
-void right(int mspeed, int movetime) {
+void left(int mspeed) {
+  m_stop();
+  digitalWrite(motorA2, HIGH);
+  analogWrite(motorAPWM, mspeed * 1.2);
+}
+
+void right(int mspeed) {
+  m_stop();
+  digitalWrite(motorB2, HIGH);
+  analogWrite(motorBPWM, mspeed * 1.2);
+}
+
+void t_right(int mspeed) {
   m_stop();
   digitalWrite(motorA2, HIGH);
   analogWrite(motorAPWM, mspeed);
+  digitalWrite(motorB1, HIGH);
+  analogWrite(motorBPWM, mspeed);
 }
 
-void left(int mspeed, int movetime) {
+void t_left(int mspeed) {
   m_stop();
   digitalWrite(motorB2, HIGH);
   analogWrite(motorBPWM, mspeed);
+  digitalWrite(motorA1, HIGH);
+  analogWrite(motorAPWM, mspeed);  
 }
 
 void m_stop() {
@@ -359,60 +222,27 @@ void m_stop() {
   digitalWrite(motorB2, LOW);
 }
 
-void sensor_gui() {
-  if (digitalRead(runSwitch) == 1) {
-    isRun = true;
-  } else {
-    isRun = false;
+int true_sensor() {
+  int sensor_cnt = 0;
+  if (digitalRead(sensor1) == 1)
+  {
+    sensor_cnt++;
   }
-  lcd.clear();
-  lcd.setCursor(1, 0);
-  if (digitalRead(sensor1) == 1) {
-    lcd.print("B");
-  } else {
-    lcd.print("W");
+  if (digitalRead(sensor2) == 1)
+  {
+    sensor_cnt++;
   }
-  if (digitalRead(sensor2) == 1) {
-    lcd.print("B");
-  } else {
-    lcd.print("W");
+  if (digitalRead(sensor3) == 1)
+  {
+    sensor_cnt++;
   }
-  if (digitalRead(sensor3) == 1) {
-    lcd.print("B");
-  } else {
-    lcd.print("W");
+  if (digitalRead(sensor4) == 1)
+  {
+    sensor_cnt++;
   }
-  if (digitalRead(sensor4) == 1) {
-    lcd.print("B");
-  } else {
-    lcd.print("W");
+  if (digitalRead(sensor5) == 1)
+  {
+    sensor_cnt++;
   }
-  if (digitalRead(sensor5) == 1) {
-    lcd.print("B");
-  } else {
-    lcd.print("W");
-  }
-  lcd.setCursor(7, 0);
-  if (isRun == true) {
-    lcd.print("RUN");
-  }
-  else {
-    lcd.print("STOP");
-  }
-  lcd.setCursor(2, 1);
-  if (digitalRead(green1) == 1) {
-    lcd.print("W");
-  } else {
-    lcd.print("G");
-  }
-  lcd.setCursor(4, 1);
-  //White 4v
-  //Green and Black 0v
-  if (digitalRead(green2) == 1) {
-    lcd.print("W");
-  } else {
-    lcd.print("G");
-  }
-  lcd.setCursor(6, 1);
-  lcd.print(get_slope());
+  return sensor_cnt;
 }
