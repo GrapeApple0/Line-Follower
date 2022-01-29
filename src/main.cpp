@@ -16,8 +16,8 @@
 //E-Mail mail@04.si
 
 // --Motor Connection--
-//    MotorA is Left
-// 　 MotorB is Right
+//    motorL is Left
+// 　 motorR is Right
 
 //history
 //ver 1.3 18/1/2022 => bug fix,add slope detect
@@ -27,21 +27,31 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+const int no_define1 = 0;//RX
+const int no_define2 = 1;//TX
 const int touch = 2;
 const int sensor1 = 3;
 const int sensor2 = 4;
 const int sensor3 = 5;
 const int sensor4 = 6;
 const int sensor5 = 7;
-const int motorB1 = 8;
-const int motorB2 = 9;
-const int motorBPWM = 10;
-const int motorAPWM = 11;
-const int motorA2 = 12;
-const int motorA1 = 13;
+const int motorR1 = 8;
+const int motorR2 = 9;
+const int motorRPWM = 10;
+const int motorLPWM = 11;
+const int motorL2 = 12;
+const int motorL1 = 13;
 const int bump = 14;
+const int encoder_L1 = 15;
+const int encoder_L2 = 16;
+const int encoder_R1 = 17;
+const int encoder_R2 = 18;
+const int no_define3 = 19;//Reserved with green sensor
+
+const double left_speed_conf = 1.2;//1.2
+const double right_speed_conf = 0.9;//0.9
+
 void linetrace();
-void sensor_gui();
 void back(int);
 void forward(int);
 void right(int);
@@ -52,19 +62,23 @@ void m_stop();
 int true_sensor();
 
 void setup() {
-  // put your setup code here, to run once:
-  pinMode(motorA1, OUTPUT);
-  pinMode(motorA2, OUTPUT);
-  pinMode(motorAPWM, OUTPUT);
-  pinMode(motorB1, OUTPUT);
-  pinMode(motorB2, OUTPUT);
-  pinMode(motorBPWM, OUTPUT);
+  pinMode(motorL1, OUTPUT);
+  pinMode(motorL2, OUTPUT);
+  pinMode(motorLPWM, OUTPUT);
+  pinMode(motorR1, OUTPUT);
+  pinMode(motorR2, OUTPUT);
+  pinMode(motorRPWM, OUTPUT);
   pinMode(touch, INPUT);
+  pinMode(bump, INPUT);
   pinMode(sensor1, INPUT);
   pinMode(sensor2, INPUT);
   pinMode(sensor3, INPUT);
   pinMode(sensor4, INPUT);
   pinMode(sensor5, INPUT);
+  pinMode(encoder_L1, INPUT);
+  pinMode(encoder_L2, INPUT);
+  pinMode(encoder_R1, INPUT);
+  pinMode(encoder_R2, INPUT);
 }
 
 void loop() {
@@ -74,35 +88,28 @@ void loop() {
 void linetrace() {
   if (digitalRead(touch) == 1)
   {
-    
+    back(140);
+    delay(700);
+    left(150);
+    delay(800);
+    while (digitalRead(sensor3) != 1)
+    {
+      left(140);
+      delay(300);
+    }
   }
   else if (digitalRead(bump) == 1)
   {
-    /* code */
-  } 
+    forward(200);
+    delay(1300);
+    back(100);
+    delay(500);
+  }
   else if (true_sensor() == 5)//交差点・T字路・バンプ
   {
-    back(80);
+    back(140);
     delay(50);
-    if (digitalRead(sensor3) == 1)
-    {
-      forward(100);
-      delay(300);
-    }
-    else
-    {
-      while (digitalRead(sensor3) != 1)
-      {
-        if (digitalRead(sensor2) == 1)
-        {
-          right(70);
-        }
-        else{
-          left(70);
-        }
-      }
-      
-    }
+    left(100);
   }
   else if (true_sensor() == 4 || true_sensor() == 3)//直角
   {
@@ -126,15 +133,19 @@ void linetrace() {
     }    
     if (l_sensor_cnt < r_sensor_cnt)
     {
-      back(80); 
-      right(150);
-      delay(100);
+      back(120); 
+      while (digitalRead(sensor3) != 1)
+      {
+        t_right(150);
+      }
     }
     else if (l_sensor_cnt > r_sensor_cnt)
     {
-      back(80);   
-      left(150);
-      delay(100);
+      back(120);
+      while (digitalRead(sensor3) != 1)
+      {
+        t_left(150);
+      }
     }
     else
     {
@@ -145,25 +156,27 @@ void linetrace() {
   {
     if (digitalRead(sensor1) == 1)
     {
-      back(80); 
-      left(150);
+      back(120);
+      left(140);
     }    
     else if (digitalRead(sensor5) == 1)
     {
-      back(80);       
-      right(150);
+      back(120);       
+      right(140);
     }
     else if (digitalRead(sensor2) == 1)
     {
-      forward(110);
+      right(120);
+      forward(130);
     } 
     else if (digitalRead(sensor4) == 1)
     {
-      forward(110);
+      left(120);
+      forward(130);
     }
     else if (digitalRead(sensor3) == 1)
     {
-      forward(100);
+      forward(130);
     }     
   }
   else{//白
@@ -173,53 +186,53 @@ void linetrace() {
 
 void back(int mspeed) {
   m_stop();
-  digitalWrite(motorA1, HIGH);
-  analogWrite(motorAPWM, mspeed);
-  digitalWrite(motorB1, HIGH);
-  analogWrite(motorBPWM, mspeed);
+  digitalWrite(motorL1, HIGH);
+  analogWrite(motorLPWM, mspeed);
+  digitalWrite(motorR1, HIGH);
+  analogWrite(motorRPWM, mspeed);
 }
 
 void forward(int mspeed) {
   m_stop();
-  digitalWrite(motorA2, HIGH);
-  analogWrite(motorAPWM, mspeed * 1.5);
-  digitalWrite(motorB2, HIGH);
-  analogWrite(motorBPWM, mspeed * 1.5);
+  digitalWrite(motorL2, HIGH);
+  analogWrite(motorLPWM,constrain(mspeed * right_speed_conf,0,254));
+  digitalWrite(motorR2, HIGH);
+  analogWrite(motorRPWM, mspeed * left_speed_conf);
 }
 
 void left(int mspeed) {
   m_stop();
-  digitalWrite(motorA2, HIGH);
-  analogWrite(motorAPWM, mspeed * 1.2);
+  digitalWrite(motorL2, HIGH);
+  analogWrite(motorLPWM, mspeed * left_speed_conf);
 }
 
 void right(int mspeed) {
   m_stop();
-  digitalWrite(motorB2, HIGH);
-  analogWrite(motorBPWM, mspeed * 1.2);
-}
-
-void t_right(int mspeed) {
-  m_stop();
-  digitalWrite(motorA2, HIGH);
-  analogWrite(motorAPWM, mspeed);
-  digitalWrite(motorB1, HIGH);
-  analogWrite(motorBPWM, mspeed);
+  digitalWrite(motorR2, HIGH);
+  analogWrite(motorRPWM, mspeed);
 }
 
 void t_left(int mspeed) {
   m_stop();
-  digitalWrite(motorB2, HIGH);
-  analogWrite(motorBPWM, mspeed);
-  digitalWrite(motorA1, HIGH);
-  analogWrite(motorAPWM, mspeed);  
+  digitalWrite(motorL2, HIGH);
+  analogWrite(motorLPWM, mspeed * left_speed_conf);
+  digitalWrite(motorR1, HIGH);
+  analogWrite(motorRPWM, mspeed);
+}
+
+void t_right(int mspeed) {
+  m_stop();
+  digitalWrite(motorR2, HIGH);
+  analogWrite(motorRPWM, mspeed);
+  digitalWrite(motorL1, HIGH);
+  analogWrite(motorLPWM, mspeed);
 }
 
 void m_stop() {
-  digitalWrite(motorA1, LOW);
-  digitalWrite(motorB1, LOW);
-  digitalWrite(motorA2, LOW);
-  digitalWrite(motorB2, LOW);
+  digitalWrite(motorL1, LOW);
+  digitalWrite(motorR1, LOW);
+  digitalWrite(motorL2, LOW);
+  digitalWrite(motorR2, LOW);
 }
 
 int true_sensor() {
